@@ -1,6 +1,5 @@
 """
-Creator: Ivanovitch Silva
-Date: 17 April 2022
+Date: 29 May 2022
 Create API
 """
 # from typing import Union
@@ -12,57 +11,42 @@ import joblib
 import os
 import wandb
 import sys
-from source.api.pipeline import FeatureSelector, CategoricalTransformer, NumericalTransformer
+from source.api.pipeline import FeatureSelector, CategoricalTransformer
 
 # global variables
 setattr(sys.modules["__main__"], "FeatureSelector", FeatureSelector)
 setattr(sys.modules["__main__"], "CategoricalTransformer", CategoricalTransformer)
-setattr(sys.modules["__main__"], "NumericalTransformer", NumericalTransformer)
+#setattr(sys.modules["__main__"], "NumericalTransformer", NumericalTransformer)
 
 # name of the model artifact
-artifact_model_name = "decision_tree/model_export:latest"
+artifact_model_name = "primeiro_projeto/model_export:latest"
 
 # initiate the wandb project
-run = wandb.init(project="decision_tree",job_type="api")
+run = wandb.init(project="primeiro_projeto",job_type="api")
 
 # create the api
 app = FastAPI()
 
 # declare request example data using pydantic
 # a person in our dataset has the following attributes
-class Person(BaseModel):
-    age: int
-    workclass: str
-    fnlwgt: int
-    education: str
-    education_num: int
-    marital_status: str
-    occupation: str
-    relationship: str
-    race: str
-    sex: str
-    capital_gain: int
-    capital_loss: int
-    hours_per_week: int
-    native_country: str
+class Car(BaseModel):
+    buying: str
+    maint: str
+    doors: str
+    persons: str
+    lug_boot: str
+    safety: str
+
 
     class Config:
         schema_extra = {
             "example": {
-                "age": 72,
-                "workclass": 'Self-emp-inc',
-                "fnlwgt": 473748,
-                "education": 'Some-college',
-                "education_num": 10,
-                "marital_status": 'Married-civ-spouse',
-                "occupation": 'Exec-managerial',
-                "relationship": 'Husband',
-                "race": 'White',
-                "sex": 'Male',
-                "capital_gain": 0,
-                "capital_loss": 0,
-                "hours_per_week": 25,
-                "native_country": 'United-States'
+                "buying": 'high',
+                "maint": 'high',
+                "doors": '3',
+                "persons": '4',
+                "lug_boot": 'med',
+                "safety": 'med'
             }
         }
 
@@ -78,7 +62,7 @@ async def root():
 
 # run the model inference and use a Person data structure via POST to the API.
 @app.post("/predict")
-async def get_inference(person: Person):
+async def get_inference(car: Car):
     
     # Download inference artifact
     model_export_path = run.use_artifact(artifact_model_name).file()
@@ -88,9 +72,19 @@ async def get_inference(person: Person):
     # note that we could use pd.DataFrame.from_dict
     # but due be only one instance, it would be necessary to
     # pass the Index.
-    df = pd.DataFrame([person.dict()])
+    df = pd.DataFrame([car.dict()])
 
     # Predict test data
     predict = pipe.predict(df)
 
-    return "low income <=50K" if predict[0] <= 0.5 else "high income >50K"
+    return get_class(predict[0])
+
+
+def get_class(value):
+    if value == 0:
+        return "acc"
+    if value == 1:
+        return "good"
+    if value == 2:
+        return "unacc"
+    return "very good"
