@@ -7,4 +7,4 @@ Disciplina: Apredizagem de Máquinas
 
 Projeto: Avaliação de Carros utilizando MLOps
 
-
+https://car-test-api.herokuapp.com/docs
